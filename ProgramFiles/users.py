@@ -10,26 +10,26 @@ class User:
             if table[0][0:4] == "user":
                 self.tables.append(table[0])
 
-    def create_resident_table(self, TableName):
+    def create_resident_table(self, TableName, info):
 
         query = "create table if not exists resn_"+TableName+" \
             (Name varchar(30) not null,\
             ResidentID int primary key,\
             Rent int not null,\
+            Deadline date, \
+            Type varchar(30) not null \
             PaidInTime char default 'Y')"
 
         print("Table "+TableName+" created successfully!")
         self.m.query(query)
+        rent = self.m.query("select RentalInformation from admn_rent_{} WHERE ApartmentType = {}".format(TableName, info["Type"]))[0]
+        info_query = "Insert into resn_{}(Name, ResidentID, Rent, Type) values('{}', {}, {}, '{}', '{}')".format(info["Name"], info["ResidentID"], rent, info["Type"])
+        self.m.query(info_query)
 
-    def update_resident_table(self, TableName, info):
-        for resident in info:
-            Name = resident["Name"]
-            ResidentID = resident["ID"]
-            Rent = resident["Rent"]
-            query = "insert into resn_{} values({},{},'{}')".format(TableName, Name, ResidentID, Rent)
-            self.m.query(query)
-            self.m.commit()
-            print("\nData entered and saved successfully!\n")
+    def get_rent_info(self, TableName):
+        query = "Select Rent, Deadline, PaidInTime from resn_{}".format(TableName)
+        return pd.DataFrame(self.m.query(query), columns=["Rent", "Deadline", "PaidInTime"])
+
 
 class Admin:
     def __init__(self):
@@ -95,3 +95,22 @@ class Admin:
             self.m.commit()
             print("Data entered and saved successfully!")
 
+    def add_rent(self, TableName, info):
+        query = "Update resn_{} SET Rent = {}, Deadline = {}, PaidInTime = {}".format(TableName, info["Rent"], info["DL"], info["Status"])
+        self.m.query(query)
+
+    def change_rent(self, TableName, info):
+        query = "Update resn_{} SET Rent = {}".format(TableName, info["Rent"])
+        self.m.query(query)
+
+    def change_status(self, TableName, info):
+        query = "Update resn_{} SET PaidInTime = {}".format(TableName, info["Status"])
+        self.m.query(query)
+
+    def change_deadline(self, TableName, info):
+        query = "Update resn_{} SET Deadline = {}".format(TableName, info["Deadline"])
+        self.m.query(query)
+
+    def get_rent_info(self, TableName):
+        query = "Select Rent, Deadline, PaidInTime from resn_{}".format(TableName)
+        return pd.DataFrame(self.m.query(query), columns=["Rent", "Deadline", "PaidInTime"])

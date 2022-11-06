@@ -20,9 +20,11 @@ class UIelm:
         return data
 
 
-    def register(self):
+    def register(self): ### TO BE FIXED ###
 
         type = st.selectbox("Select User Type: ", ["Admin", "Resident"])
+        
+        
         new_username = st.text_input("Enter Community ID: ")
         new_pass1 = st.text_input("Enter Password: ")
         new_pass2 = st.text_input("Enter Password again: ")
@@ -49,7 +51,6 @@ class UIelm:
                     else:
                         usr = User()
                         apt_name = st.text_input("Enter Apartment Number: ")
-                        usr.create_resident_table(apt_name)
                         st.success("Successfully registered as {}".format())
 
                     st.info("Please login to continue.")
@@ -78,7 +79,7 @@ class UIelm:
                     usr = Admin()
 
                     with col1:
-                        admn_choice = st.selectbox("Admin Menu", ["Add Rental Information", "Update Rental information", "Track Bills", "Messages"])
+                        admn_choice = st.selectbox("Admin Menu", ["Add Rental Information", "Update Rental information", "Bills", "Messages"])
                         if admn_choice == "Add Rental Information":
                             ### Current Rental information being added ###
 
@@ -113,8 +114,42 @@ class UIelm:
                                 self.d.commit()
                                 st.success("Information Updated.")
 
-                        elif admn_choice == "Track Bills":
-                            st.text("coming soon")
+                        elif admn_choice == "Bills":
+                            
+                            bill_choices = ["Add Rent", "Change Rent", "Change Status", "Change Deadline", "View Bills"]
+
+                            bill_choice = st.radio("Choose task: ", bill_choices)
+
+                            if bill_choice == "Add Rent":
+                                info = {}
+                                name = st.selectbox("Choose Apartment Name", usr.get_apt_names())
+                                info["Rent"] = st.text_input("Enter rent value: ")
+                                info["DL"] = st.text_input("Enter Due Date (YYYY-MM-DD): ")
+                                info["Status"] = st.radio("Has the amount been paid?", ["Yes", "No"])
+                                if st.button("Confirm"):
+                                    usr.add_rent(name, info)
+
+                            elif bill_choice == "Change Rent":
+                                info = {}
+                                name = st.selectbox("Choose Apartment Name", usr.get_apt_names())
+                                info["Rent"] = st.text_input("Enter rent value: ")
+                                if st.button("Confirm"):
+                                    usr.add_rent(name, info)
+
+                            elif bill_choice == "Change Status":
+                                info = {}
+                                name = st.selectbox("Choose Apartment Name", usr.get_apt_names())
+                                info["Status"] = st.radio("Has the amount been paid?", ["Yes", "No"])
+                                if st.button("Confirm"):
+                                    usr.add_rent(name, info)
+
+                            elif bill_choice == "View Bills":
+                                name = st.selectbox("Choose Apartment Name", usr.get_apt_names())
+                                if st.button("Confirm"):
+                                    st.table(usr.get_rent_info(name))
+
+                            else:
+                                pass
 
                         else:
                             st.text("coming soon")
@@ -124,6 +159,31 @@ class UIelm:
                             
                 else: ### User Controls ###
                     usr = User()
+
+                    if "resn_{}".format(ID) not in Admin().get_apt_names():
+                        info["Name"] = st.text_input("Enter Your Name: ")
+                        types = Admin().get_apt_types(ID)
+                        info["Type"] = st.selectbox("Types Menu", types)
+                        info["ResidentID"] = ID
+                        usr.create_resident_table(ID, info)
+                        st.success("Created table for {}".format(ID))
+
+                    else:
+                        st.info("Table already exists. Please continue to tasks.")
+
+
+                    usr_choices = ["View Bills", "Contact Admin"]
+                    usr_choice = st.selectbox("Choose Task", usr_choices)
+
+                    if usr_choice == "View Bills":
+                        st.table(usr.get_rent_info())
+
+                    elif usr_choice == "Contact Admin":
+
+                        st.text("coming soon.")
+
+                    else: 
+                        pass
 
             else:
 

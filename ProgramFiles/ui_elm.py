@@ -80,7 +80,7 @@ class UIelm:
         usr = Admin()
 
         with col1:
-            admn_choice = st.selectbox("Admin Menu", ["Add Rental Information", "Update Rental information", "Bills", "Messages"])
+            admn_choice = st.selectbox("Admin Menu", ["Add Rental Information", "Update Rental information", "Bills"])
             if admn_choice == "Add Rental Information":
                 ### Current Rental information being added ###
 
@@ -214,7 +214,7 @@ class UIelm:
                 st.info("Table already exists. Please continue to tasks.")
 
 
-                usr_choices = ["View Bills", "Contact Admin"]
+                usr_choices = ["View Bills"]
                 usr_choice = st.selectbox("Choose Task", usr_choices)
 
                 if usr_choice == "View Bills":

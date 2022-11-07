@@ -4,7 +4,6 @@ from ProgramFiles.ui_elm import UIelm
 from ProgramFiles.users import User, Admin
 from ProgramFiles.databasemanager import DatabaseManager
 import pickle
-from st_aggrid import GridOptionsBuilder, AgGrid, GridUpdateMode, DataReturnMode
 
 u = UIelm()
 d = DatabaseManager()

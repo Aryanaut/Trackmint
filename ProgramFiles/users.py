@@ -10,25 +10,9 @@ class User:
             if table[0][0:4] == "user":
                 self.tables.append(table[0])
 
-    def create_resident_table(self, TableName, ID, info):
-
-        rent = self.m.query("select RentalInformation from admn_rent_{} WHERE ApartmentType LIKE '{}'".format(ID, info["Type"]))[0][0]
-
-        query = "create table if not exists resn_"+TableName+" \
-            (Name varchar(30) not null default '{}',\
-            ResidentID int default '{}',\
-            Rent int not null default {},\
-            Deadline date, \
-            Type varchar(30) not null default '{}' \
-            PaidInTime char(1) default 'Y')".format(info["Name"], info["ResidentID"], rent, info["Type"])
-
-        self.m.query(query)
-        print("Table "+TableName+" created successfully!")
-
-    def get_rent_info(self, TableName):
-        query = "Select Rent, Deadline, PaidInTime from resn_{} ORDER BY Deadline".format(TableName)
-        return pd.DataFrame(self.m.query(query), columns=["Rent", "Deadline", "PaidInTime"])
-
+    def get_rent_info(self, ID, AptNumber):
+        query = "Select RentID, AptType, Rent, Deadline, Status from resn_{} Where AptNumber = {}"
+        return pd.DataFrame(self.m.query(query), columns=["RentID", "Apartment Type", "Rent", "Deadline", "Status"])
 
 class Admin:
     def __init__(self):
@@ -44,6 +28,21 @@ class Admin:
             RentalInformation int not null)".format(TableName)
 
         print("Table "+TableName+" created successfully!")
+        self.m.query(query)
+
+    def create_resident_table(self, AptNumber, ID, info):
+
+        rent = self.m.query("select RentalInformation from admn_rent_{} WHERE ApartmentType LIKE '{}'".format(ID, info["Type"]))[0][0]
+
+        query = "create table if not exists resn_{} \
+            CommunityID int, \
+            AptNumber varchar(20), \
+            RentID int, \
+            AptType varchar(30), \
+            Rent int, \
+            Deadline Date, \
+            Status Char(1) Default 'N'".format(ID)
+
         self.m.query(query)
 
     def get_apt_names(self):
@@ -95,24 +94,24 @@ class Admin:
             print("Data entered and saved successfully!")
 
     def add_rent(self, TableName, info):
-        query = "Insert Into resn_{}(Rent, Deadline, PaidInTime) Values({}, '{}', '{}')".format(TableName, info["Rent"], info["DL"], info["Status"])
+        query = "Insert Into resn_{} Values({}, '{}', {}, '{}', {}, '{}', '{}')".format(TableName, TableName, info["AptNum"], info["RentID"], info["Type"], info["Rent"], info["DL"], info["Status"])
         self.m.query(query)
         self.m.commit()
         print(query)
 
     def change_rent(self, TableName, info):
-        query = "Update resn_{} SET Rent = {} WHERE Deadline = '{}'".format(TableName, info["Rent"], info["Deadline"])
+        query = "Update resn_{} SET Rent = {} WHERE RentID = {}".format(TableName, info["Rent"], info["RentID"])
         self.m.query(query)
         self.m.commit()
 
     def change_status(self, TableName, info):
-        query = "Update resn_{} SET PaidInTime = '{}' WHERE Deadline = '{}'".format(TableName, info["Status"], info["Deadline"])
+        query = "Update resn_{} SET PaidInTime = '{}' WHERE RentID = {}".format(TableName, info["Status"], info["RentID"])
         self.m.query(query)
         self.m.commit()
         
 
     def change_deadline(self, TableName, info):
-        query = "Update resn_{} SET Deadline = '{}' WHERE Deadline = '{}'".format(TableName, info["Deadline"], info["OldDeadline"])
+        query = "Update resn_{} SET Deadline = '{}' WHERE RentID = {}".format(TableName, info["Deadline"], info["RentID"])
         self.m.query(query)
         self.m.commit()
 

@@ -11,7 +11,7 @@ class User:
                 self.tables.append(table[0])
 
     def get_rent_info(self, ID, AptNumber):
-        query = "Select RentID, AptType, Rent, Deadline, Status from resn_{} Where AptNumber = {}"
+        query = "Select RentID, AptType, Rent, Deadline, Status from resn_{} Where AptNumber = '{}'".format(ID, AptNumber)
         return pd.DataFrame(self.m.query(query), columns=["RentID", "Apartment Type", "Rent", "Deadline", "Status"])
 
 class Admin:
@@ -30,33 +30,39 @@ class Admin:
         print("Table "+TableName+" created successfully!")
         self.m.query(query)
 
-    def create_resident_table(self, AptNumber, ID, info):
+    def create_resident_table(self, ID, info):
 
         rent = self.m.query("select RentalInformation from admn_rent_{} WHERE ApartmentType LIKE '{}'".format(ID, info["Type"]))[0][0]
 
         query = "create table if not exists resn_{} \
-            CommunityID int, \
+            (CommunityID int, \
             AptNumber varchar(20), \
-            RentID int, \
+            RentID int Primary Key, \
             AptType varchar(30), \
             Rent int, \
             Deadline Date, \
-            Status Char(1) Default 'N'".format(ID)
+            Status Char(1) Default 'N')".format(ID)
 
         self.m.query(query)
 
-    def get_apt_names(self):
+    def get_apt_names(self, ID):
 
-        query = "Show Tables"
+        data = self.m.get_all_data()
+        print(data)
+        a = []
+        for record in data.keys():
+            if data[record]["Type"] == "Resident":
+                a.append(data[record]["AptN"])
 
-        apt_list = self.m.query(query)
-        out_list = []
-        for row in apt_list:
-            if row[0][:5] == "resn_":
-                name = row[0][5:]
-                out_list.append(name.title())
+        return a
 
-        return out_list
+    def get_apt_type(self, ID, AptN):
+        data = self.m.get_all_data()
+        
+        for record in data.keys():
+            if record == ID+"r":
+                if data[record]["AptN"] == AptN:
+                    return data[record]["AptType"]
 
     def get_tables(self):
 
@@ -93,8 +99,8 @@ class Admin:
             self.m.commit()
             print("Data entered and saved successfully!")
 
-    def add_rent(self, TableName, info):
-        query = "Insert Into resn_{} Values({}, '{}', {}, '{}', {}, '{}', '{}')".format(TableName, TableName, info["AptNum"], info["RentID"], info["Type"], info["Rent"], info["DL"], info["Status"])
+    def add_rent(self, CID, TableName, info):
+        query = "Insert Into resn_{} Values({}, '{}', {}, '{}', {}, '{}', '{}')".format(CID, CID, info["AptNum"], info["RentID"], info["Type"], info["Rent"], info["DL"], info["Status"])
         self.m.query(query)
         self.m.commit()
         print(query)
@@ -105,7 +111,7 @@ class Admin:
         self.m.commit()
 
     def change_status(self, TableName, info):
-        query = "Update resn_{} SET PaidInTime = '{}' WHERE RentID = {}".format(TableName, info["Status"], info["RentID"])
+        query = "Update resn_{} SET Status = '{}' WHERE RentID = {}".format(TableName, info["Status"], info["RentID"])
         self.m.query(query)
         self.m.commit()
         
@@ -116,5 +122,5 @@ class Admin:
         self.m.commit()
 
     def get_rent_info(self, TableName):
-        query = "Select Rent, Deadline, PaidInTime from resn_{} ORDER BY Deadline".format(TableName)
-        return pd.DataFrame(self.m.query(query), columns=["Rent", "Deadline", "PaidInTime"])
+        query = "Select RentID, Rent, Deadline, status from resn_{} ORDER BY Deadline".format(TableName)
+        return pd.DataFrame(self.m.query(query), columns=["RentID", "Rent", "Deadline", "Status"])

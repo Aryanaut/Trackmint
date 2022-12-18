@@ -2,6 +2,7 @@ import streamlit as st
 from .users import User, Admin
 import pickle
 from .databasemanager import DatabaseManager
+import random
 
 class UIelm:
     def __init__(self):
@@ -60,11 +61,11 @@ class UIelm:
                     
                     if new_pass2 == new_pass1:
                         
-                        details = {cID+'r': {"AptN": building_name, "Code": new_pass1, "Type": type}}
+                        details = {cID+'r': {"AptN": building_name, "Code": new_pass1, "Type": type, "AptType":apt_type}}
                         with open(r"./SystemFiles/passwords.dat", "ab") as f:
                             pickle.dump(details, f)
                         info = {"Name":building_name, "ResidentID":cID, "Type":apt_type}
-                        User().create_resident_table(building_name, cID, info)
+                        Admin().create_resident_table(cID, info)
                         st.success("Successfully registered.")
 
                     else:
@@ -123,62 +124,70 @@ class UIelm:
 
                 if bill_choice == "Add Rent":
                     info = {}
-                    name = st.selectbox("Choose Apartment Name", usr.get_apt_names())
-                    st.text("You may choose to use the default values for the rent according to the Apartment Type.")
-                    default = st.radio("Use Default Values?", ["Yes", "No"])[0]
-                    if default == "Y":
-                        info["DL"] = st.text_input("Enter Due Date (YYYY-MM-DD): ")
-                        info["Status"] = st.radio("Has the amount been paid?", ["Y", "N"])
-                        type = self.d.query("select type from resn_{}".format(name))[0][0]
-                        info["Rent"] = self.d.query("select RentalInformation from admn_rent_{} WHERE ApartmentType LIKE '{}'".format(ID, type))[0][0]
-                    else:
-                        info["Rent"] = st.text_input("Enter rent value: ")
-                        info["DL"] = st.text_input("Enter Due Date (YYYY-MM-DD): ")
-                        info["Status"] = st.radio("Has the amount been paid?", ["Y", "N"])
-                    if st.button("Confirm"):
-                        usr.add_rent(name, info)
-                        st.success("Added Rent successfully.")
+                    names = usr.get_apt_names(ID)
+                    if names:
+                        name = st.selectbox("Choose Apartment Name", usr.get_apt_names(ID))
+                        type = Admin().get_apt_type(ID, name)
+                        st.text("You may choose to use the default values for the rent according to the Apartment Type.")
+                        default = st.radio("Use Default Values?", ["Yes", "No"])[0]
+                        if default == "Y":
+                            info["DL"] = st.text_input("Enter Due Date (YYYY-MM-DD): ")
+                            info["Status"] = st.radio("Has the amount been paid?", ["Y", "N"])
+                            info["Rent"] = self.d.query("select RentalInformation from admn_rent_{} WHERE ApartmentType LIKE '{}'".format(ID, type))[0][0]
+                        else:
+                            info["Rent"] = st.text_input("Enter rent value: ")
+                            info["DL"] = st.text_input("Enter Due Date (YYYY-MM-DD): ")
+                            info["Status"] = st.radio("Has the amount been paid?", ["Y", "N"])
+                        
+                        info["AptNum"] = name
+                        info["RentID"] = random.randint(1000, 10000)
+                        info["Type"] = type
+                        
+                        if st.button("Confirm"):
+                            usr.add_rent(ID, name, info)
+                            st.success("Added Rent successfully.")
 
                 elif bill_choice == "Change Rent":
                     info = {}
-                    name = st.selectbox("Choose Apartment Name", usr.get_apt_names())
-                    info["Deadline"] = st.text_input("Enter Due Date of Rent (YYYY-MM-DD): ")
+                    name = st.selectbox("Choose Apartment Name", usr.get_apt_names(ID))
+                    info["RentID"] = st.text_input("Enter Rent ID:")
                     info["Rent"] = st.text_input("Enter rent value: ")
                     if st.button("Confirm"):
-                        usr.change_rent(name, info)
+                        usr.change_rent(ID, info)
 
                     with col2:
                         st.text("Current Rent Information for {}:".format(name))
-                        st.table(usr.get_rent_info(name))
+                        st.table(usr.get_rent_info(ID))
 
                 elif bill_choice == "Change Deadline":
                     info = {}
-                    name = st.selectbox("Choose Apartment Name", usr.get_apt_names())
-                    info["OldDeadline"] = st.text_input("Enter Due Date of Rent (YYYY-MM-DD): ")
+                    name = st.selectbox("Choose Apartment Name", usr.get_apt_names(ID))
+                    info["RentID"] = st.text_input("Enter Rent ID:")
                     info["Deadline"] = st.text_input("Enter New Due Date (YYYY-MM-DD): ")
                     if st.button("Confirm"):
-                        usr.change_deadline(name, info)
+                        usr.change_deadline(ID, info)
 
                     with col2:
                         st.text("Current Rent Information for {}:".format(name))
-                        st.table(usr.get_rent_info(name))
+                        st.table(usr.get_rent_info(ID))
 
                 elif bill_choice == "Change Status":
                     info = {}
-                    name = st.selectbox("Choose Apartment Name", usr.get_apt_names())
-                    info["Deadline"] = st.text_input("Enter Due Date (YYYY-MM-DD): ")
+                    name = st.selectbox("Choose Apartment Name", usr.get_apt_names(ID))
+                    info["RentID"] = st.text_input("Enter Rent ID:")
                     info["Status"] = st.radio("Has the amount been paid?", ["Y", "N"])
                     if st.button("Confirm"):
-                        usr.change_status(name, info)
+                        usr.change_status(ID, info)
+                        st.success("Values updated.")
 
                     with col2:
                         st.text("Current Rent Information for {}:".format(name))
-                        st.table(usr.get_rent_info(name))
+                        st.table(usr.get_rent_info(ID))
 
                 elif bill_choice == "View Bills":
-                    name = st.selectbox("Choose Apartment Name", usr.get_apt_names())
+                    name = st.selectbox("Choose Apartment Name", usr.get_apt_names(ID))
                     if st.button("Confirm"):
-                        st.table(usr.get_rent_info(name))
+                        st.table(usr.get_rent_info(ID))
 
                 else:
                     pass
@@ -193,7 +202,7 @@ class UIelm:
     def resident_controls(self, ID, Apt, CODE):
         usr = User()
 
-        data = Admin().get_apt_names()
+        data = Admin().get_apt_names(ID)
 
         col1, col2 = st.columns(2)
 
@@ -218,7 +227,7 @@ class UIelm:
                 usr_choice = st.selectbox("Choose Task", usr_choices)
 
                 if usr_choice == "View Bills":
-                    st.table(usr.get_rent_info(Apt))
+                    st.table(usr.get_rent_info(ID, Apt))
 
                 elif usr_choice == "Contact Admin":
 
@@ -240,8 +249,8 @@ class UIelm:
                         unsafe_allow_html=True,
                     )
 
-                total_due = "Rs." + str(self.d.query("Select SUM(Rent) from resn_{} GROUP BY PaidInTime HAVING PaidInTime = 'N'".format(Apt))[0][0])
-                due_by = "Due By: "+str(self.d.query("Select Deadline from resn_{} ORDER BY Deadline DESC".format(Apt))[0][0])
+                total_due = "Rs." + str(self.d.query("Select SUM(Rent) from resn_{} GROUP BY Status HAVING Status = 'N'".format(ID))[0][0])
+                due_by = "Due By: "+str(self.d.query("Select Deadline from resn_{} ORDER BY Deadline DESC".format(ID))[0][0])
                 st.metric("Total Due (Rs.)", total_due, due_by)
         
 
@@ -263,14 +272,14 @@ class UIelm:
 
         else:
 
-            ID = st.sidebar.text_input("Enter Community ID:") + 'r'
+            ID = st.sidebar.text_input("Enter Community ID:")
             Apt = st.sidebar.text_input("Enter Apartment Number: ")
             CODE = st.sidebar.text_input("Enter Password: ", type="password")
             data = self.get_all_data()
 
             if st.sidebar.checkbox("Login"):
-                if CODE == data[ID]["Code"]:
-                    if Apt == data[ID]["AptN"]:
+                if CODE == data[ID + 'r']["Code"]:
+                    if Apt == data[ID + 'r']["AptN"]:
                         self.resident_controls(ID, Apt, CODE)
 
                 else:

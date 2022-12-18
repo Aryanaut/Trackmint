@@ -1,5 +1,6 @@
 from .databasemanager import DatabaseManager
 import pandas as pd
+import streamlit as st
 
 class User:
     def __init__(self): 
@@ -48,21 +49,23 @@ class Admin:
     def get_apt_names(self, ID):
 
         data = self.m.get_all_data()
-        print(data)
         a = []
-        for record in data.keys():
-            if data[record]["Type"] == "Resident":
-                a.append(data[record]["AptN"])
+        for record in data:
+            key = list(record.keys())[0]
+            if key == ID + 'r':
+                if record[key]["Type"] == "Resident":
+                    a.append(record[key]["AptN"])
 
         return a
 
     def get_apt_type(self, ID, AptN):
         data = self.m.get_all_data()
         
-        for record in data.keys():
-            if record == ID+"r":
-                if data[record]["AptN"] == AptN:
-                    return data[record]["AptType"]
+        for record in data:
+            key = list(record.keys())[0]
+            if key == ID+"r":
+                if record[key]["AptN"] == AptN:
+                    return record[key]["AptType"]
 
     def get_tables(self):
 
@@ -122,5 +125,5 @@ class Admin:
         self.m.commit()
 
     def get_rent_info(self, TableName):
-        query = "Select RentID, Rent, Deadline, status from resn_{} ORDER BY Deadline".format(TableName)
+        query = "Select RentID, Rent, Deadline, status from resn_{} ORDER BY Deadline DESC".format(TableName)
         return pd.DataFrame(self.m.query(query), columns=["RentID", "Rent", "Deadline", "Status"])

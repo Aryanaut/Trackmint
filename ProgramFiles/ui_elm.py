@@ -12,10 +12,10 @@ class UIelm:
 
     def get_all_data(self):
         f = open(r"./SystemFiles/passwords.dat", "rb")
-        data = {}
+        data = []
         while True:
             try:
-                data.update(pickle.load(f))
+                data.append(pickle.load(f))
             except EOFError:
                 break
         return data
@@ -32,7 +32,7 @@ class UIelm:
             new_pass1 = st.text_input("Enter Password: ", type="password")
             new_pass2 = st.text_input("Enter Password again: ", type="password")
 
-            if new_username in self.get_all_data().keys():
+            if new_username in self.d.get_all_keys():
                 st.warning("Community already exists. Please log in.")
 
             if new_pass2 == new_pass1:
@@ -57,7 +57,7 @@ class UIelm:
 
             if st.button("Register"):
 
-                if cID in self.get_all_data().keys():
+                if cID in self.d.get_all_keys():
                     
                     if new_pass2 == new_pass1:
                         
@@ -131,12 +131,12 @@ class UIelm:
                         st.text("You may choose to use the default values for the rent according to the Apartment Type.")
                         default = st.radio("Use Default Values?", ["Yes", "No"])[0]
                         if default == "Y":
-                            info["DL"] = st.text_input("Enter Due Date (YYYY-MM-DD): ")
+                            info["DL"] = st.date_input("Enter Due Date (YYYY-MM-DD): ")
                             info["Status"] = st.radio("Has the amount been paid?", ["Y", "N"])
                             info["Rent"] = self.d.query("select RentalInformation from admn_rent_{} WHERE ApartmentType LIKE '{}'".format(ID, type))[0][0]
                         else:
                             info["Rent"] = st.text_input("Enter rent value: ")
-                            info["DL"] = st.text_input("Enter Due Date (YYYY-MM-DD): ")
+                            info["DL"] = st.date_input("Enter Due Date (YYYY-MM-DD): ")
                             info["Status"] = st.radio("Has the amount been paid?", ["Y", "N"])
                         
                         info["AptNum"] = name
@@ -163,7 +163,7 @@ class UIelm:
                     info = {}
                     name = st.selectbox("Choose Apartment Name", usr.get_apt_names(ID))
                     info["RentID"] = st.text_input("Enter Rent ID:")
-                    info["Deadline"] = st.text_input("Enter New Due Date (YYYY-MM-DD): ")
+                    info["Deadline"] = st.date_input("Enter New Due Date (YYYY-MM-DD): ")
                     if st.button("Confirm"):
                         usr.change_deadline(ID, info)
 
@@ -249,9 +249,13 @@ class UIelm:
                         unsafe_allow_html=True,
                     )
 
-                total_due = "Rs." + str(self.d.query("Select SUM(Rent) from resn_{} GROUP BY Status HAVING Status = 'N'".format(ID))[0][0])
-                due_by = "Due By: "+str(self.d.query("Select Deadline from resn_{} ORDER BY Deadline DESC".format(ID))[0][0])
-                st.metric("Total Due (Rs.)", total_due, due_by)
+                rent_sum = self.d.query("Select SUM(Rent) from resn_{} GROUP BY Status HAVING Status = 'N'".format(ID))
+                if len(rent_sum) != 0:
+                    total_due = "Rs." + str(rent_sum[0][0])
+                    due_by = "Due By: "+str(self.d.query("Select Deadline from resn_{} ORDER BY Deadline DESC".format(ID))[0][0])
+                    st.metric("Total Due (Rs.)", total_due, due_by)
+                else:
+                    st.text("No Rent records found.")
         
 
     def login(self):
@@ -264,7 +268,7 @@ class UIelm:
             CODE = st.sidebar.text_input("Enter Password: ", type="password")
 
             if st.sidebar.checkbox("Login"):
-                if CODE == self.get_all_data()[ID]["Code"]:
+                if CODE == self.d.get_key_code(ID)[1]:
                     self.admin_controls(ID, CODE)
 
                 else:
@@ -275,12 +279,10 @@ class UIelm:
             ID = st.sidebar.text_input("Enter Community ID:")
             Apt = st.sidebar.text_input("Enter Apartment Number: ")
             CODE = st.sidebar.text_input("Enter Password: ", type="password")
-            data = self.get_all_data()
 
             if st.sidebar.checkbox("Login"):
-                if CODE == data[ID + 'r']["Code"]:
-                    if Apt == data[ID + 'r']["AptN"]:
-                        self.resident_controls(ID, Apt, CODE)
+                if CODE == self.d.get_resident_key_code(Apt, ID + 'r'):
+                    self.resident_controls(ID, Apt, CODE)
 
                 else:
                     st.warning("Incorrect login details.")

@@ -106,7 +106,6 @@ class Admin:
         query = "Insert Into resn_{} Values({}, '{}', {}, '{}', {}, '{}', '{}')".format(CID, CID, info["AptNum"], info["RentID"], info["Type"], info["Rent"], info["DL"], info["Status"])
         self.m.query(query)
         self.m.commit()
-        print(query)
 
     def change_rent(self, TableName, info):
         query = "Update resn_{} SET Rent = {} WHERE RentID = {}".format(TableName, info["Rent"], info["RentID"])
@@ -124,6 +123,6 @@ class Admin:
         self.m.query(query)
         self.m.commit()
 
-    def get_rent_info(self, TableName):
-        query = "Select RentID, Rent, Deadline, status from resn_{} ORDER BY Deadline DESC".format(TableName)
+    def get_rent_info(self, TableName, AptName):
+        query = "Select RentID, Rent, Deadline, status from resn_{} WHERE AptNumber = '{}' ORDER BY Deadline DESC".format(TableName, AptName)
         return pd.DataFrame(self.m.query(query), columns=["RentID", "Rent", "Deadline", "Status"])

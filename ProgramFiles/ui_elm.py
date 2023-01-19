@@ -37,7 +37,6 @@ class UIelm:
 
             if new_pass2 == new_pass1:
                 if st.button("Register"):
-                    st.success("Successfully registered.")
                     details = {new_username: {"Code": new_pass1, "Type": type}}
                     with open(r"./SystemFiles/passwords.dat", "ab") as f:
                         pickle.dump(details, f)
@@ -52,8 +51,10 @@ class UIelm:
             building_name = st.text_input("Enter Apartment Number: ")
             new_pass1 = st.text_input("Enter Password: ", type="password")
             new_pass2 = st.text_input("Enter Password again: ", type="password")
-            types = Admin().get_apt_types(cID)
-            apt_type = st.selectbox("Types Menu", types)
+
+            if cID in self.d.get_all_keys():
+                types = Admin().get_apt_types(cID)
+                apt_type = st.selectbox("Types Menu", types)
 
             if st.button("Register"):
 
@@ -67,11 +68,12 @@ class UIelm:
                         info = {"Name":building_name, "ResidentID":cID, "Type":apt_type}
                         Admin().create_resident_table(cID, info)
                         st.success("Successfully registered.")
+                        st.info("Please login to continue.")
 
                     else:
                         st.warning("Re-enter details. Passwords do not match.")
 
-                    st.info("Please login to continue.")
+                    
 
                 else:
                     st.warning("Admin has not joined Trackmint.")
@@ -157,7 +159,7 @@ class UIelm:
 
                     with col2:
                         st.text("Current Rent Information for {}:".format(name))
-                        st.table(usr.get_rent_info(ID))
+                        st.table(usr.get_rent_info(ID, name))
 
                 elif bill_choice == "Change Deadline":
                     info = {}
@@ -169,7 +171,7 @@ class UIelm:
 
                     with col2:
                         st.text("Current Rent Information for {}:".format(name))
-                        st.table(usr.get_rent_info(ID))
+                        st.table(usr.get_rent_info(ID, name))
 
                 elif bill_choice == "Change Status":
                     info = {}
@@ -182,12 +184,12 @@ class UIelm:
 
                     with col2:
                         st.text("Current Rent Information for {}:".format(name))
-                        st.table(usr.get_rent_info(ID))
+                        st.table(usr.get_rent_info(ID, name))
 
                 elif bill_choice == "View Bills":
                     name = st.selectbox("Choose Apartment Name", usr.get_apt_names(ID))
                     if st.button("Confirm"):
-                        st.table(usr.get_rent_info(ID))
+                        st.table(usr.get_rent_info(ID, name))
 
                 else:
                     pass
@@ -201,7 +203,6 @@ class UIelm:
 
     def resident_controls(self, ID, Apt, CODE):
         usr = User()
-
         data = Admin().get_apt_names(ID)
 
         col1, col2 = st.columns(2)
@@ -249,10 +250,10 @@ class UIelm:
                         unsafe_allow_html=True,
                     )
 
-                rent_sum = self.d.query("Select SUM(Rent) from resn_{} GROUP BY Status HAVING Status = 'N'".format(ID))
+                rent_sum = self.d.query("Select SUM(Rent) from resn_{} WHERE AptNumber = '{}' GROUP BY Status HAVING Status = 'N'".format(ID, Apt))
                 if len(rent_sum) != 0:
                     total_due = "Rs." + str(rent_sum[0][0])
-                    due_by = "Due By: "+str(self.d.query("Select Deadline from resn_{} ORDER BY Deadline DESC".format(ID))[0][0])
+                    due_by = "Due By: "+str(self.d.query("Select Deadline from resn_{} WHERE AptNumber = '{}' ORDER BY Deadline DESC".format(ID, Apt))[0][0])
                     st.metric("Total Due (Rs.)", total_due, due_by)
                 else:
                     st.text("No Rent records found.")
@@ -281,6 +282,7 @@ class UIelm:
             CODE = st.sidebar.text_input("Enter Password: ", type="password")
 
             if st.sidebar.checkbox("Login"):
+                
                 if CODE == self.d.get_resident_key_code(Apt, ID + 'r'):
                     self.resident_controls(ID, Apt, CODE)
 

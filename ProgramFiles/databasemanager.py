@@ -3,7 +3,7 @@ import pickle
 
 class DatabaseManager:
     def __init__(self):
-        self.connector = msq.connect(user="root", passwd="infinity2022", host="localhost", database="wilson")
+        self.connector = msq.connect(user="root", passwd="sql123", host="localhost", database='wilson')
         self.cursor = self.connector.cursor()
 
     def query(self, query):

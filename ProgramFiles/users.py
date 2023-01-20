@@ -79,7 +79,7 @@ class Admin:
 
     def get_apt_types(self, TableName):
 
-        query = "Select ApartmentType from admn_rent_{}".format(TableName)
+        query = "Select Distinct ApartmentType from admn_rent_{}".format(TableName)
 
         apt_types = self.m.query(query)
         out_list = []

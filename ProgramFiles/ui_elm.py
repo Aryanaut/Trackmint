@@ -269,11 +269,16 @@ class UIelm:
             CODE = st.sidebar.text_input("Enter Password: ", type="password")
 
             if st.sidebar.checkbox("Login"):
-                if CODE == self.d.get_key_code(ID)[1]:
-                    self.admin_controls(ID, CODE)
+                if ID in self.d.get_all_keys():
+                    if CODE == self.d.get_key_code(ID)[1]:
+                        self.admin_controls(ID, CODE)
+
+                    else:
+                        st.warning("Incorrect login details.")
 
                 else:
                     st.warning("Incorrect login details.")
+
 
         else:
 
